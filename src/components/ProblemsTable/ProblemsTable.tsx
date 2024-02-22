@@ -1,11 +1,10 @@
 import { problems } from '@/mockProblems/Problems';
 import { CiCircleCheck } from "react-icons/ci";
 import { FaYoutube } from "react-icons/fa";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { IoMdClose } from 'react-icons/io';
 import YouTube from 'react-youtube';
-import { doc } from 'firebase/firestore';
 
 type ProblemsTableProps = {
 
@@ -16,6 +15,19 @@ const ProblemsTable: React.FC<ProblemsTableProps> = () => {
         isOpen: false,
         videoId: ''
     })
+
+    const closeModle = () => {
+        setyoutubePlayer({ isOpen: false, videoId: '' })
+    }
+
+    useEffect(() => {
+        const handleESC = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') closeModle()
+        }
+        window.addEventListener("keydown", handleESC)
+
+        return () => window.removeEventListener("keydown", handleESC)
+    }, [])
 
 
     return (
@@ -61,9 +73,9 @@ const ProblemsTable: React.FC<ProblemsTableProps> = () => {
                         <div className='w-full z-50 h-full px-6 relative max-w-4xl'>
                             <div className='w-full h-full flex items-center justify-center relative'>
                                 <div className='w-full relative'>
-                                    <IoMdClose onClick={() => setyoutubePlayer({ isOpen: false  , videoId: ''})} fontSize={"35"} className='cursor-pointer absolute -top-16 right-0' />
-                                    <YouTube videoId={youtubePlayer.videoId} loading='lazy' 
-                                    iframeClassName='w-full min-h-[500px]' />
+                                    <IoMdClose onClick={closeModle} fontSize={"35"} className='cursor-pointer absolute -top-16 right-0' />
+                                    <YouTube videoId={youtubePlayer.videoId} loading='lazy'
+                                        iframeClassName='w-full min-h-[500px]' />
                                 </div>
                             </div>
                         </div>

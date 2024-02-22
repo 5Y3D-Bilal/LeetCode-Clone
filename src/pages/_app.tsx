@@ -3,6 +3,7 @@ import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { Poppins } from 'next/font/google'
 import { RecoilRoot } from 'recoil'
+import { NextUIProvider } from '@nextui-org/react'
 
 const inter = Poppins({ subsets: ['latin'], weight: ["400"] })
 
@@ -16,7 +17,9 @@ export default function App({ Component, pageProps }: AppProps) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className={inter.className}>
-        <Component {...pageProps} />
+        <NextUIProvider>
+          <Component {...pageProps} />
+        </NextUIProvider>
       </div>
     </RecoilRoot>
   )
