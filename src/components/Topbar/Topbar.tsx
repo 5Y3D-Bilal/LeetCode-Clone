@@ -4,6 +4,8 @@ import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Avatar, User } from "@nextui-org/react";
 import Logout from '../Buttons/Logout';
+import { useSetRecoilState } from 'recoil';
+import { authModleState } from '@/atoms/authModleAtom';
 
 type TopbarProps = {
 
@@ -11,6 +13,8 @@ type TopbarProps = {
 
 const Topbar: React.FC<TopbarProps> = () => {
     const [user] = useAuthState(auth)
+    const setAuthModleState = useSetRecoilState(authModleState)
+
 
     return (
         <>
@@ -21,9 +25,13 @@ const Topbar: React.FC<TopbarProps> = () => {
                     </Link>
 
                     <div className='flex items-center space-x-4 flex-1 justify-end'>
-                        {!user && (<Link href='/auth'>
-                            <button className='bg-dark-fill-3 py-1 px-2 cursor-pointer rounded '>Sign In</button>
-                        </Link>)}
+                        {!user && (
+                            <Link href='/auth' onClick={() => {
+                                setAuthModleState((oldVal) => ({ ...oldVal, isOpen: true, type: "login" }))
+                            }}>
+                                <button className='bg-dark-fill-3 py-1 px-2 cursor-pointer rounded '>Sign In</button>
+                            </Link>
+                        )}
                         {user && (
                             <div className='cursor-pointer group relative'>
                                 <Dropdown placement="bottom-end">
@@ -41,7 +49,7 @@ const Topbar: React.FC<TopbarProps> = () => {
                                 </Dropdown>
                             </div>
                         )}
-                        <Logout />
+                        {user && <Logout />}
                     </div>
                 </div>
             </nav>

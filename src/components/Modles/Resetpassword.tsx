@@ -1,14 +1,35 @@
-import React from 'react';
+import { auth } from '@/Firebase/firebase';
+import React, { useEffect, useState } from 'react';
+import { useSendPasswordResetEmail } from 'react-firebase-hooks/auth';
 
 type ResetpasswordProps = {
 
 };
 
 const Resetpassword: React.FC<ResetpasswordProps> = () => {
+    const [email, setEmail] = useState('');
+    const [sendPasswordResetEmail, sending, error] = useSendPasswordResetEmail(auth);
+
+    // Form Sumbit Function for a password reset
+    const handleSubmitFunction = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const success = await sendPasswordResetEmail(email);
+        if (success) {
+            alert('Sent email');
+        }
+    }
+
+    // If we get any errors
+    useEffect(() => {
+        if (error) {
+            alert(error.message)
+        }
+    }, [error])
+
 
     return (
         <>
-            <form className='space-y-6 px-6 lg:px-8 pb-4 sm:pb-6 xl:pb-8'>
+            <form className='space-y-6 px-6 lg:px-8 pb-4 sm:pb-6 xl:pb-8' onSubmit={handleSubmitFunction}>
                 <h3 className='text-xl font-medium  text-white'>Reset Password</h3>
                 <p className='text-sm text-white '>
                     Forgotten your password? Enter your e-mail address below, and we&apos;ll send you an e-mail allowing you
@@ -19,6 +40,8 @@ const Resetpassword: React.FC<ResetpasswordProps> = () => {
                         Your email
                     </label>
                     <input
+                        // So From here we will get the email of the user and when the form will submit a email will be sent on that user email for a password reset
+                        onChange={(e) => setEmail(e.target.value)}
                         type='email'
                         name='email'
                         id='email'

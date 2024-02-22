@@ -4,12 +4,7 @@ import React from 'react';
 import { useSignOut } from 'react-firebase-hooks/auth';
 import { LuLogOut } from "react-icons/lu";
 
-type LogoutProps = {
-
-};
-
-
-const Logout: React.FC<LogoutProps> = () => {
+const Logout: React.FC = () => {
     const router = useRouter()
     const [signOut, loading, error] = useSignOut(auth);
     const handleLogout = () =>{
