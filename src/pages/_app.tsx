@@ -4,6 +4,8 @@ import Head from 'next/head'
 import { Poppins } from 'next/font/google'
 import { RecoilRoot } from 'recoil'
 import { NextUIProvider } from '@nextui-org/react'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css';
 
 const inter = Poppins({ subsets: ['latin'], weight: ["400"] })
 
@@ -18,6 +20,7 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
       <div className={inter.className}>
         <NextUIProvider>
+          <ToastContainer />
           <Component {...pageProps} />
         </NextUIProvider>
       </div>

@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useSignInWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { useSetRecoilState } from 'recoil';
 import Loading from '../Loading/Loading';
+import { toast } from 'react-toastify';
 
 type LoginProps = {
 
@@ -37,11 +38,30 @@ const Login: React.FC<LoginProps> = () => {
     const hanldeSumbit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!input.email || !input.password) {
-            return alert('Please fillout all fields')
+            return toast.error('Please Fillout all fields', {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            })
         }
         try {
             const user = await signInWithEmailAndPassword(input.email, input.password)
             if (!user) return
+            toast.success('Succesfully Logined', {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            })
             router.push('/')
         } catch (error: any) {
             alert(error.message)
@@ -49,7 +69,16 @@ const Login: React.FC<LoginProps> = () => {
     }
 
     useEffect(() => {
-        if (error) alert(error.message)
+        if (error)  toast.error(error.message, {
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        })
     }, [error])
 
 

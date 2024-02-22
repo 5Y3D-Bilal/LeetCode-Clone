@@ -6,6 +6,7 @@ import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
 import { useRouter } from 'next/router';
 import Swal from 'sweetalert2'
 import Loading from '../Loading/Loading';
+import { toast } from 'react-toastify';
 
 
 type SignupProps = {
@@ -38,12 +39,30 @@ const Signup: React.FC<SignupProps> = () => {
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!input.email || !input.password || !input.displayName) {
-            return alert("Plese Fillout all Fields")
+            return toast.error('Please Fillout all fields', {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            })
         }
         try {
             const newuser = await createUserWithEmailAndPassword(input.email, input.password);
             if (!newuser) return
-
+            toast.success('Registerd  Successfully', {
+                position: "top-right",
+                autoClose: 2000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+            })
             router.push('/')
         } catch (error: any) {
             alert(error.message)
@@ -51,7 +70,16 @@ const Signup: React.FC<SignupProps> = () => {
     }
 
     useEffect(() => {
-        if (error) alert(error.message)
+        if (error) toast.error(error.message, {
+            position: "top-right",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+        })
     }, [error])
 
 
