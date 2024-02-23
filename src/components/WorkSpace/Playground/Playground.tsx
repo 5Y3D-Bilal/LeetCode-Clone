@@ -11,8 +11,13 @@ type PlaygroundProps = {
 };
 
 const Playground: React.FC<PlaygroundProps> = () => {
+const boilerPlateCode = `// Start Coding Now!
 
-    return <div className='flex flex-col bg-dark-layer-1 relative'>
+function towsum(num, target){
+    // Write your code here.
+};`;
+
+    return <div className='flex flex-col bg-dark-layer-1 relative overflow-x-hidden'>
         <PrefrenceNavbar />
 
         <Split
@@ -22,7 +27,7 @@ const Playground: React.FC<PlaygroundProps> = () => {
             minSize={60}
         >
             <div>
-                <div className='w-full overflow-auto'> <CodeMirror value='const a = 1;' theme={vscodeDark} extensions={[javascript()]} style={{ fontSize: 16 }} /> </div>
+                <div className='w-full overflow-auto'> <CodeMirror value={boilerPlateCode} theme={vscodeDark} extensions={[javascript()]} style={{ fontSize: 16 }} /> </div>
             </div>
             <div className='w-full px-5 overflow-auto'>
                 {/* Test Case Heading */}
