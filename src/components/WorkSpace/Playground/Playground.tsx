@@ -42,6 +42,7 @@ const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
                         problem.examples.map((example, index) => (
                             <div className='mx-2 items-start mt-2 text-white '
                                 onClick={() => setActiveTestCaseId(index)}
+                                key={example.id}
                             >
                                 <div className='flex flex-wrap items-center gap-y-4'>
                                     <div className='font-medium items-center  transition-all focus:outline-none inline-flex bg-dark-fill-3 hover:bg-dark-fill-2 relative rounded-lg px-4 py-1 cursor-pointer'>Case {index + 1}</div>
