@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaStar } from "react-icons/fa";
 import { AiFillDislike, AiFillLike } from "react-icons/ai";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
-import { Problem } from '@/utils/types/problem';
+import { DBProblem, Problem } from '@/utils/types/problem';
+import { doc, getDoc } from 'firebase/firestore';
+import { firestore } from '@/Firebase/firebase';
 
 type ProblemDescriptionProps = {
     problem: Problem
 };
 
 const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
+    useGetCurrentProblems(problem.id);
 
     return <div className='bg-dark-layer-1'>
         {/* TAB */}
@@ -101,3 +104,26 @@ const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
     </div >
 }
 export default ProblemDescription;
+
+
+
+function useGetCurrentProblems(problemId: string) {
+    const [currentProblem, setCurrentProblem] = useState<DBProblem | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [problemDifficultyClass, setProblemDifficultyClass] = useState<string>("")
+    useEffect(() => {
+        // Get the problems data from FireStore Data
+        const getCureentProblem = async () => {
+            setLoading(true);
+            const docRef = doc(firestore, 'problems', problemId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const problem = docSnap.data()
+                console.log(problem)
+            }
+        }
+        getCureentProblem()
+    }, [problemId])
+
+    return { currentProblem, loading, problemDifficultyClass }
+}

@@ -1,20 +1,23 @@
-import { problems } from '@/mockProblems/Problems';
 import { CiCircleCheck } from "react-icons/ci";
 import { FaYoutube } from "react-icons/fa";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { IoMdClose } from 'react-icons/io';
 import YouTube from 'react-youtube';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { firestore } from '@/Firebase/firebase';
+import { DBProblem } from "@/utils/types/problem";
 
 type ProblemsTableProps = {
-
+    setLoadingPromblems: React.Dispatch<React.SetStateAction<boolean>>
 };
 
-const ProblemsTable: React.FC<ProblemsTableProps> = () => {
+const ProblemsTable: React.FC<ProblemsTableProps> = ({ setLoadingPromblems }) => {
     const [youtubePlayer, setyoutubePlayer] = useState({
         isOpen: false,
         videoId: ''
     })
+    const problems = useGetProblems(setLoadingPromblems)
 
     const closeModle = () => {
         setyoutubePlayer({ isOpen: false, videoId: '' })
@@ -34,35 +37,38 @@ const ProblemsTable: React.FC<ProblemsTableProps> = () => {
         <>
             <>
                 <tbody className='text-white'>
-                    {problems.map((doc, idx) => {
-                        const difColor = doc.difficulty === "Easy" ? "text-dark-green-s" : doc.difficulty === "Medium" ? "text-dark-yellow" : "text-dark-pink"
-
+                    {problems.map((problem, idx) => {
+                        const difColor = problem.difficulty === "Easy" ? "text-dark-green-s" : problem.difficulty === "Medium" ? "text-dark-yellow" : "text-dark-pink"
                         return (
-                            <>
-                                <tr className={`${idx % 2 === 1 ? 'bg-dark-layer-1' : ''}`} key={doc.id}>
+                                <tr className={`${idx % 2 === 1 ? 'bg-dark-layer-1' : ''}`} key={problem.id}>
                                     <th className='px-2 py-4 font-medium whitespace-nowrap text-dark-green-s '>
                                         <CiCircleCheck size={25} />
                                     </th>
                                     <td className='px-6 py-4'>
-                                        <Link href={`/problems/${doc.id}`} className='hover:text-blue-600 cursor-pointer'>
-                                            {doc.title}
-                                        </Link>
+                                        {problem.link ? (
+                                            <Link href={problem.link} className="hover:text-blue-600 cursor-pointer" target="_blank">
+                                                {problem.title}
+                                            </Link>
+                                        ) : (
+                                            <Link href={`/problems/${problem.id}`} className='hover:text-blue-600 cursor-pointer'>
+                                                {problem.title}
+                                            </Link>
+                                        )}
                                     </td>
                                     <td className={`px-6 py-4 ${difColor}`}>
-                                        {doc.difficulty}
+                                        {problem.difficulty}
                                     </td>
                                     <td className='px-6 py-4 '>
-                                        {doc.category}
+                                        {problem.category}
                                     </td>
                                     <td className='px-6 py-4 '>
-                                        {doc.videoId ? (
-                                            <FaYoutube onClick={() => setyoutubePlayer({ isOpen: true, videoId: doc.videoId as string })} size={28} className='cursor-pointer hover:text-red-600' />
+                                        {problem.videoId ? (
+                                            <FaYoutube onClick={() => setyoutubePlayer({ isOpen: true, videoId: problem.videoId as string })} size={28} className='cursor-pointer hover:text-red-600' />
                                         ) : (
                                             <p className='text-gray-400'>Coming soon</p>
                                         )}
                                     </td>
                                 </tr>
-                            </>
                         )
                     })}
                 </tbody>
@@ -87,3 +93,25 @@ const ProblemsTable: React.FC<ProblemsTableProps> = () => {
 
 }
 export default ProblemsTable;
+
+function useGetProblems(setLoadingProblems: React.Dispatch<React.SetStateAction<boolean>>) {
+    const [problems, setProblems] = useState<DBProblem[]>([]);
+
+    useEffect(() => {
+        const getProblems = async () => {
+            // Fetching data logic
+            setLoadingProblems(true)
+            const q = query(collection(firestore, "problems"), orderBy("order", "asc"))
+            const querySnapshot = await getDocs(q)
+            const temp: DBProblem[] = []
+            querySnapshot.forEach((doc) => {
+                temp.push({ id: doc.id, ...doc.data() } as DBProblem)
+            })
+            setProblems(temp)
+            setLoadingProblems(false)
+        }
+
+        getProblems()
+    }, [setLoadingProblems])
+    return problems
+}

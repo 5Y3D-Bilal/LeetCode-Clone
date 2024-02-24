@@ -1,4 +1,4 @@
-import { auth } from '@/Firebase/firebase';
+import { auth, firestore } from '@/Firebase/firebase';
 import { authModleState } from '@/atoms/authModleAtom';
 import React, { useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
@@ -7,6 +7,7 @@ import { useRouter } from 'next/router';
 import Swal from 'sweetalert2'
 import Loading from '../Loading/Loading';
 import { toast } from 'react-toastify';
+import { doc, setDoc } from 'firebase/firestore';
 
 
 type SignupProps = {
@@ -51,9 +52,7 @@ const Signup: React.FC<SignupProps> = () => {
             })
         }
         try {
-            const newuser = await createUserWithEmailAndPassword(input.email, input.password);
-            if (!newuser) return
-            toast.success('Registerd  Successfully', {
+            toast.success('Creating your  account...', {
                 position: "top-right",
                 autoClose: 2000,
                 hideProgressBar: false,
@@ -62,10 +61,27 @@ const Signup: React.FC<SignupProps> = () => {
                 draggable: true,
                 progress: undefined,
                 theme: "light",
+                toastId: "loadingToast"
             })
+            const newuser = await createUserWithEmailAndPassword(input.email, input.password);
+            if (!newuser) return
+            const userData = {
+                uid: newuser.user.uid,
+                email: newuser.user.email,
+                displayName: input.displayName,
+                createdAt: Date.now(),
+                updateAt: Date.now(),
+                likedProblems: [],
+                dislikedProblems: [],
+                solvedProblems: [],
+                starredProblems: []
+            }
+            await setDoc(doc(firestore, 'users', newuser.user.uid), userData)
             router.push('/')
         } catch (error: any) {
             alert(error.message)
+        } finally {
+            toast.dismiss("loadingToast")
         }
     }
 

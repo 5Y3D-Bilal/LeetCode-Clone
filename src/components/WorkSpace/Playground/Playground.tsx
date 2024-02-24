@@ -45,7 +45,10 @@ const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
                                 key={example.id}
                             >
                                 <div className='flex flex-wrap items-center gap-y-4'>
-                                    <div className='font-medium items-center  transition-all focus:outline-none inline-flex bg-dark-fill-3 hover:bg-dark-fill-2 relative rounded-lg px-4 py-1 cursor-pointer'>Case {index + 1}</div>
+                                    <div className={`font-medium items-center  transition-all focus:outline-none inline-flex bg-dark-fill-3 hover:bg-dark-fill-2    relative rounded-lg px-4 py-1 cursor-pointer 
+                                    ${activeTestCaseId === index ? "bg-gray-500" : ""}
+                                   `}>Case {index + 1}
+                                    </div>
                                 </div>
                             </div>
                         ))
@@ -56,15 +59,15 @@ const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
                     <p className='text-sm font-medium text-white mt-4 '>Input:</p>
                     <div className='w-full cursor-text rounded-lg border px-3 py-[10px] bg-dark-fill-3 border-transparent text-white mt-2'>
                         {problem.examples[activeTestCaseId].inputText}
-                        </div>
+                    </div>
                     <p className='text-sm font-medium text-white mt-4 '>Output: </p>
                     <div className='w-full cursor-text rounded-lg border px-3 py-[10px] bg-dark-fill-3 border-transparent text-white mt-2 mb-16'>
                         {problem.examples[activeTestCaseId].outputText}
                     </div>
                 </div>
             </div>
-        </Split>
+        </Split >
         <EditorFooter />
-    </div>
+    </div >
 }
 export default Playground;
