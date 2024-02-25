@@ -12,9 +12,7 @@ interface SettingModalProps {
 
 const SettingsModal: React.FC<SettingModalProps> = ({ setSetting, setting }) => {
     const [fontSize, setFontSize] = useLocalStorage("Lcc-FontSize", "16px")
-    const handleClickDropDown = (e:
-        React.MouseEvent<HTMLButtonElement, Element>
-    ) : void => {
+    const handleClickDropDown = (e: any) => {
         e.stopPropagation()
         setSetting({ ...setting, dropdownIsOpen: !setting.dropdownIsOpen })
     }
