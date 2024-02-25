@@ -1,17 +1,130 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { FaStar } from "react-icons/fa";
-import { AiFillDislike, AiFillLike } from "react-icons/ai";
+import { AiFillDislike, AiFillLike, AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { DBProblem, Problem } from '@/utils/types/problem';
-import { doc, getDoc } from 'firebase/firestore';
-import { firestore } from '@/Firebase/firebase';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
+import { auth, firestore } from '@/Firebase/firebase';
+import RactangleSkeleton from '@/components/Skeletons/RactangleSkeleton';
+import CircleSkeleton from '@/components/Skeletons/CircleSkeleton';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { toast } from 'react-toastify';
 
 type ProblemDescriptionProps = {
     problem: Problem
 };
 
 const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
-    useGetCurrentProblems(problem.id);
+    const { currentProblem, loading, problemDifficultyClass, setCurrentProblem } = useGetCurrentProblems(problem.id);
+    const { liked, disliked, solved, starred, setData } = useGetUserDataOnProblem(problem.id)
+    const [user] = useAuthState(auth)
+    const [updatingLikes, setUpdatingLikes] = useState(false)
+
+    const ReturningUserDataAndPROBLEMDATA = async (transaction: any) => {
+        const userRef = doc(firestore, "users", user!.uid)
+        const problemRef = doc(firestore, "problems", problem.id)
+        const userDoc = await transaction.get(userRef)
+        const problemDoc = await transaction.get(problemRef)
+        return { userDoc, problemDoc, userRef, problemRef }
+    }
+
+    //! Liking a problem Function
+    const handleLike = async () => {
+        if (!user) {
+            toast.error("You must be login to preform this action.")
+            return
+        }
+        if (updatingLikes) return;
+        setUpdatingLikes(true)
+        //^ OUR CONDATIONS | <If a user alr liked, if alr disliked or neither>
+        await runTransaction(firestore, async (transaction) => {
+            // Getting user and problem refrence to update the likeCount and when the user is logged out and get back the like count of that remains the same as it was later.
+            const { problemDoc, userDoc, userRef, problemRef } = await ReturningUserDataAndPROBLEMDATA(transaction)
+            if (userDoc.exists() && problemDoc.exists()) {
+                if (liked) {
+                    // Remove the id from likedproblem
+                    transaction.update(userRef, {
+                        likedProblems: userDoc.data().likedProblems.filter((id: string) => id !== problem.id)
+                    })
+                    transaction.update(problemRef, {
+                        likes: problemDoc.data().likes - 1
+                    })
+                    setCurrentProblem(prev => prev ? { ...prev, likes: prev?.likes - 1 } : null)
+                    setData(prev => ({ ...prev, liked: false }))
+                } else if (disliked) {
+                    transaction.update(userRef, {
+                        likedProblems: [...userDoc.data().likedProblems, problem.id],
+                        dislikedProblems: userDoc.data().dislikedProblems.filter((id: string) => id !== problem.id)
+                    })
+                    transaction.update(problemRef, {
+                        likes: problemDoc.data().likes + 1,
+                        disliked: problemDoc.data().dislikes - 1
+                    })
+                    setCurrentProblem(prev => prev ? { ...prev, likes: prev.likes + 1, dislikes: prev?.dislikes - 1 } : null)
+                    setData(prev => ({ ...prev, liked: true, disliked: false }))
+                } else {
+                    transaction.update(userRef, {
+                        likedProblems: [...userDoc.data().likedProblems, problem.id]
+                    })
+                    transaction.update(problemRef, {
+                        likes: problemDoc.data().likes + 1
+                    })
+
+                    setCurrentProblem((prev) => prev ? { ...prev, likes: prev?.likes + 1 } : null)
+                    setData((prev) => ({ ...prev, liked: true }))
+                }
+            }
+        })
+        setUpdatingLikes(false)
+    }
+    //! Disliking a problem Function
+    const handleDislike = async () => {
+        if (!user) {
+            toast.error("You must be logged in to perfrom this action.")
+            return
+        }
+        if (updatingLikes) return
+        setUpdatingLikes(true)
+        await runTransaction(firestore, async (transaction) => {
+            const { problemDoc, userDoc, userRef, problemRef } = await ReturningUserDataAndPROBLEMDATA(transaction)
+            if (userDoc.exists() && problemDoc.exists()) {
+                //^ OUR CONDATIONS | <User alr disliked , alr liked , not disliked or liked>
+                if (disliked) {
+                    transaction.update(userRef, {
+                        dislikedProblems: userDoc.data().dislikedProblems.filter((id: string) => id !== problem.id),
+                    })
+                    transaction.update(problemRef, {
+                        dislikes: problemDoc.data().dislikes - 1
+                    })
+                    setCurrentProblem((prev) => prev ? { ...prev, dislikes: prev.dislikes - 1 } : null)
+                    setData((prev) => ({ ...prev, disliked: false }))
+                } else if (liked) {
+                    // If a user has alr like and he wants he dislike now.
+                    transaction.update(userRef, {
+                        dislikedProblems: [...userDoc.data().dislikedProblems, problem.id],
+                        likedProblems: userDoc.data().likedProblems.filter((id: string) => id !== problem.id)
+                    })
+                    transaction.update(problemRef, {
+                        dislikes: problemDoc.data().dislikes + 1,
+                        likes: problemDoc.data().likes - 1
+                    })
+                    setCurrentProblem((prev) => prev ? { ...prev, dislikes: prev.dislikes + 1, likes: prev.likes - 1 } : null)
+                    setData((prev) => ({ ...prev, disliked: true, liked: false }))
+                } else {
+                    // If a user is a newUser and he wants dosnt like this PROBLEM and he wants to dislike.
+                    transaction.update(userRef, {
+                        dislikedProblems: [userDoc.data().dislikedProblems, problem.id]
+                    })
+                    transaction.update(problemRef, {
+                        dislikes: problemDoc.data().dislike + 1
+                    })
+                    setCurrentProblem((prev) => prev ? { ...prev, dislikes: prev.dislikes + 1 } : null)
+                    setData((prev) => ({ ...prev, disliked: true }))
+                }
+            }
+        })
+        setUpdatingLikes(false)
+    }
 
     return <div className='bg-dark-layer-1'>
         {/* TAB */}
@@ -28,27 +141,45 @@ const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
                     <div className='flex space-x-4'>
                         <div className='flex-1 mr-2 text-lg text-white font-medium'>{problem.title}</div>
                     </div>
-                    <div className='flex items-center mt-3'>
-                        <div
-                            className={`text-olive bg-olive inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize `}
-                        >
-                            { }
+                    {!loading && currentProblem && (
+                        <div className='flex items-center mt-3'>
+                            <div
+                                className={`${problemDifficultyClass} inline-block rounded-[21px] bg-opacity-[.15] px-2.5 py-1 text-xs font-medium capitalize `}
+                            >
+                                {currentProblem.difficulty}
+                            </div>
+                            <div className='rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s'>
+                                <IoMdCheckmarkCircleOutline />
+                            </div>
+                            <div
+                                className='flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6'
+                                onClick={handleLike}
+                            >
+                                {liked && !updatingLikes && <AiFillLike className='text-dark-blue-s' />}
+                                {!liked && !updatingLikes && <AiFillLike />}
+                                {updatingLikes && <AiOutlineLoading3Quarters className='animate-spin' />}
+
+                                <span className='text-xs'>{currentProblem.likes}</span>
+                            </div>
+                            <div className='flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6' onClick={handleDislike}>
+                                <AiFillDislike />
+                                <span className='text-xs'>{currentProblem.dislikes}</span>
+                            </div>
+                            <div className='cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 '>
+                                <FaStar />
+                            </div>
                         </div>
-                        <div className='rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s'>
-                            <IoMdCheckmarkCircleOutline />
+                    )}
+
+                    {loading && (
+                        <div className='mt-3 flex space-x-3'>
+                            <RactangleSkeleton />
+                            <CircleSkeleton />
+                            <RactangleSkeleton />
+                            <RactangleSkeleton />
+                            <CircleSkeleton />
                         </div>
-                        <div className='flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6'>
-                            <AiFillLike />
-                            <span className='text-xs'>120</span>
-                        </div>
-                        <div className='flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6'>
-                            <AiFillDislike />
-                            <span className='text-xs'>2</span>
-                        </div>
-                        <div className='cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 '>
-                            <FaStar />
-                        </div>
-                    </div>
+                    )}
 
                     {/* Problem Statement(paragraphs) */}
                     <div className='text-white text-sm'>
@@ -119,11 +250,44 @@ function useGetCurrentProblems(problemId: string) {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const problem = docSnap.data()
-                console.log(problem)
+                setCurrentProblem({ id: docSnap.id, ...problem } as DBProblem)
+                // easy, medium , hard
+                setProblemDifficultyClass(
+                    problem.difficulty === "Easy" ? "bg-olive text-olive" : problem.difficulty === "Medium" ? "bg-dark-yellow text-dark-yellow" : "bg-dark-pink text-dark-pink"
+                )
             }
+            setLoading(false)
         }
         getCureentProblem()
     }, [problemId])
 
-    return { currentProblem, loading, problemDifficultyClass }
+    return { currentProblem, loading, problemDifficultyClass, setCurrentProblem }
+}
+
+
+function useGetUserDataOnProblem(problemId: string) {
+    const [data, setData] = useState({ liked: false, disliked: false, starred: false, solved: false })
+    const [user] = useAuthState(auth)
+    useEffect(() => {
+
+        const getUserDataOnProblem = async () => {
+            const userRef = doc(firestore, "users", user!.uid)
+            const userSnap = await getDoc(userRef)
+            if (userSnap.exists()) {
+                const data = userSnap.data();
+                const { solvedProblems, likedProblems, dislikedProblems, starredProblems } = data;
+                setData({
+                    liked: likedProblems.includes(problemId),
+                    disliked: dislikedProblems.includes(problemId),
+                    solved: solvedProblems.includes(problemId),
+                    starred: starredProblems.includes(problemId)
+                })
+            }
+        }
+
+        if (user) getUserDataOnProblem()
+        return () => setData({ liked: false, disliked: false, solved: false, starred: false })
+    }, [problemId, user])
+
+    return { ...data, setData }
 }
