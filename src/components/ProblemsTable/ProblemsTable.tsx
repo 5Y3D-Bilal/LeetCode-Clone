@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { IoMdClose } from 'react-icons/io';
 import YouTube from 'react-youtube';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { firestore } from '@/Firebase/firebase';
+import { collection, doc, getDoc, getDocs, orderBy, query } from 'firebase/firestore';
+import { auth, firestore } from '@/Firebase/firebase';
 import { DBProblem } from "@/utils/types/problem";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 type ProblemsTableProps = {
     setLoadingPromblems: React.Dispatch<React.SetStateAction<boolean>>
@@ -18,6 +19,8 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ setLoadingPromblems }) =>
         videoId: ''
     })
     const problems = useGetProblems(setLoadingPromblems)
+    const solvedProblems = useGetSolvedProblems()
+    console.log(solvedProblems)
 
     const closeModle = () => {
         setyoutubePlayer({ isOpen: false, videoId: '' })
@@ -40,35 +43,35 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ setLoadingPromblems }) =>
                     {problems.map((problem, idx) => {
                         const difColor = problem.difficulty === "Easy" ? "text-dark-green-s" : problem.difficulty === "Medium" ? "text-dark-yellow" : "text-dark-pink"
                         return (
-                                <tr className={`${idx % 2 === 1 ? 'bg-dark-layer-1' : ''}`} key={problem.id}>
-                                    <th className='px-2 py-4 font-medium whitespace-nowrap text-dark-green-s '>
-                                        <CiCircleCheck size={25} />
-                                    </th>
-                                    <td className='px-6 py-4'>
-                                        {problem.link ? (
-                                            <Link href={problem.link} className="hover:text-blue-600 cursor-pointer" target="_blank">
-                                                {problem.title}
-                                            </Link>
-                                        ) : (
-                                            <Link href={`/problems/${problem.id}`} className='hover:text-blue-600 cursor-pointer'>
-                                                {problem.title}
-                                            </Link>
-                                        )}
-                                    </td>
-                                    <td className={`px-6 py-4 ${difColor}`}>
-                                        {problem.difficulty}
-                                    </td>
-                                    <td className='px-6 py-4 '>
-                                        {problem.category}
-                                    </td>
-                                    <td className='px-6 py-4 '>
-                                        {problem.videoId ? (
-                                            <FaYoutube onClick={() => setyoutubePlayer({ isOpen: true, videoId: problem.videoId as string })} size={28} className='cursor-pointer hover:text-red-600' />
-                                        ) : (
-                                            <p className='text-gray-400'>Coming soon</p>
-                                        )}
-                                    </td>
-                                </tr>
+                            <tr className={`${idx % 2 === 1 ? 'bg-dark-layer-1' : ''}`} key={problem.id}>
+                                <th className='px-2 py-4 font-medium whitespace-nowrap text-dark-green-s '>
+                                    {solvedProblems.includes(problem.id) && <CiCircleCheck size={25} />}
+                                </th>
+                                <td className='px-6 py-4'>
+                                    {problem.link ? (
+                                        <Link href={problem.link} className="hover:text-blue-600 cursor-pointer" target="_blank">
+                                            {problem.title}
+                                        </Link>
+                                    ) : (
+                                        <Link href={`/problems/${problem.id}`} className='hover:text-blue-600 cursor-pointer'>
+                                            {problem.title}
+                                        </Link>
+                                    )}
+                                </td>
+                                <td className={`px-6 py-4 ${difColor}`}>
+                                    {problem.difficulty}
+                                </td>
+                                <td className='px-6 py-4 '>
+                                    {problem.category}
+                                </td>
+                                <td className='px-6 py-4 '>
+                                    {problem.videoId ? (
+                                        <FaYoutube onClick={() => setyoutubePlayer({ isOpen: true, videoId: problem.videoId as string })} size={28} className='cursor-pointer hover:text-red-600' />
+                                    ) : (
+                                        <p className='text-gray-400'>Coming soon</p>
+                                    )}
+                                </td>
+                            </tr>
                         )
                     })}
                 </tbody>
@@ -114,4 +117,21 @@ function useGetProblems(setLoadingProblems: React.Dispatch<React.SetStateAction<
         getProblems()
     }, [setLoadingProblems])
     return problems
+}
+
+function useGetSolvedProblems() {
+    const [solvedProblems, setSolvedproblems] = useState<string[]>([])
+    const [user] = useAuthState(auth)
+    useEffect(() => {
+        const getSolvedProblems = async () => {
+            const userRef = doc(firestore, "users", user!.uid)
+            const userDoc = await getDoc(userRef)
+
+            if (userDoc.exists()) {
+                setSolvedproblems(userDoc.data().solvedProblems)
+            }
+        }
+        if (user) getSolvedProblems()
+    }, [user])
+    return solvedProblems
 }

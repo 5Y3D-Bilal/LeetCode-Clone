@@ -6,8 +6,6 @@ import useHasMounted from '@/hooks/useHasMounted'
 export default function Home() {
   const [loadingProblems, setLoadingPromblems] = useState(true)
   const hasMounted = useHasMounted();
-
-
   if (!hasMounted) return null
 
   return (
@@ -66,7 +64,7 @@ export default function Home() {
 
 const LoadingSkeleton = () => {
   return (
-    <div className='flex items-center space-x-12 mt-4 px-6'>
+    <div className=' items-center space-x-12 mt-4 px-6 flex justify-center'>
       <div className='w-6 h-6 shrink-0 rounded-full bg-dark-layer-1'></div>
       <div className='h-4 sm:w-52  w-32  rounded-full bg-dark-layer-1'></div>
       <div className='h-4 sm:w-52  w-32 rounded-full bg-dark-layer-1'></div>
