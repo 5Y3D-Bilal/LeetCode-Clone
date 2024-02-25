@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PrefrenceNavbar from './PrefrenceNavbar/PrefrenceNavbar';
 import Split from 'react-split'
 import CodeMirror from "@uiw/react-codemirror"
@@ -6,15 +6,75 @@ import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import { javascript } from '@codemirror/lang-javascript';
 import EditorFooter from './EditorFooter';
 import { Problem } from '@/utils/types/problem';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, firestore } from '@/Firebase/firebase';
+import { toast } from 'react-toastify';
+import { problems } from '@/utils/problems';
+import { useRouter } from 'next/router';
+import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
 
 type PlaygroundProps = {
     problem: Problem
+    setSuccess: React.Dispatch<React.SetStateAction<boolean>>
+    setSolved: React.Dispatch<React.SetStateAction<boolean>>
 };
 
-const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
+const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved }) => {
 
     const [activeTestCaseId, setActiveTestCaseId] = useState<number>(0)
+    let [userCode, setUserCode] = useState<string>(problem.starterCode)
+    const [user] = useAuthState(auth)
+    const { query: { pid } } = useRouter()
+    const handleSubmit = async () => {
+        if (!user) {
+            toast.error('To perform this action you have to login.')
+            return
+        }
 
+        try {
+            userCode = userCode.slice(userCode.indexOf(problem.starterFunctionName))
+            const cb = new Function(`return ${userCode}`)()
+            const handler = problems[pid as string].handlerFunction
+
+            if (typeof handler === "function") {
+                const result = handler(cb)
+                if (result) {
+                    toast.success("Congrats! You passed the test!", { position: "top-center" })
+                    setSuccess(true)
+                    setTimeout(() => {
+                        setSuccess(false)
+                    }, 10000)
+
+                    const UserRef = doc(firestore, "users", user.uid)
+                    await updateDoc(UserRef, {
+                        solvedProblems: arrayUnion(pid)
+                    })
+                    setSolved(true)
+                }
+            }
+
+        } catch (error: any) {
+            if (error.message.startsWith("AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:")) {
+                toast.error("Opps! One or more test cases Failed!")
+            } else {
+                toast.error(error.message)
+            }
+        }
+    }
+
+    useEffect(() => {
+        const code = localStorage.getItem(`code-${pid}`);
+        if (user) {
+            setUserCode(code ? JSON.parse(code) : problem.starterCode)
+        } else {
+            setUserCode(problem.starterCode)
+        }
+    }, [pid, user, problem.starterCode])
+
+    const onChange = (value: string) => {
+        setUserCode(value)
+        localStorage.setItem(`code-${pid}`, JSON.stringify(value))
+    }
 
     return <div className='flex flex-col bg-dark-layer-1 relative overflow-x-hidden'>
         <PrefrenceNavbar />
@@ -26,7 +86,15 @@ const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
             minSize={60}
         >
             <div>
-                <div className='w-full overflow-auto'> <CodeMirror value={problem.starterCode} theme={vscodeDark} extensions={[javascript()]} style={{ fontSize: 16 }} /> </div>
+                <div className='w-full overflow-auto'>
+                    <CodeMirror
+                        onChange={onChange}
+                        value={userCode}
+                        theme={vscodeDark}
+                        extensions={[javascript()]}
+                        style={{ fontSize: 16 }}
+                    />
+                </div>
             </div>
             <div className='w-full px-5 overflow-auto'>
                 {/* Test Case Heading */}
@@ -67,7 +135,7 @@ const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
                 </div>
             </div>
         </Split >
-        <EditorFooter />
+        <EditorFooter handleSubmit={handleSubmit} />
     </div >
 }
 export default Playground;

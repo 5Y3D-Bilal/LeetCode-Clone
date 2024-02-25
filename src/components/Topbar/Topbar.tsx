@@ -14,6 +14,9 @@ import { CiCircleQuestion } from "react-icons/ci";
 import Timer from '../Timer/Timer';
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/router';
+import { Problem } from '@/utils/types/problem';
+import { problems } from '@/utils/problems';
 
 type TopbarProps = {
     problemPage?: boolean
@@ -51,6 +54,23 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
         toast.success("Saved")
     }
 
+    const router = useRouter();
+    const handleProblemChange = (isForward: boolean) => {
+        const { order } = problems[router.query.pid as string] as Problem;
+        const direction = isForward ? 1 : -1;
+        const nextProblemOrder = order + direction // 1 + 1
+        const nextProblemKey = Object.keys(problems).find(key => problems[key].order === nextProblemOrder)
+        console.log(nextProblemKey)
+        if (isForward && !nextProblemKey) {
+            const firstproblemKey = Object.keys(problems).find(key => problems[key].order === 1)
+            router.push(`/problems/${firstproblemKey}`)
+        } else if (!isForward && !nextProblemKey) {
+            const lastProblemKey = Object.keys(problems).find((key) => problems[key].order === Object.keys(problems).length)
+            router.push(`/problems/${lastProblemKey}`)
+        } else{
+            router.push(`/problems/${nextProblemKey}`)
+        }
+    }
 
     return (
         <>
@@ -62,7 +82,7 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
 
                     {problemPage && (
                         <div className='flex items-center gap-4 flex-1 justify-center'>
-                            <div className='flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer'>
+                            <div className='flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer' onClick={() => handleProblemChange(false)}>
                                 <FaChevronLeft />
                             </div>
                             <Link href={'/'} className='flex items-center gap-2 font-medium max-w-[170px] text-dark-gray-8 cursor-pointer' >
@@ -73,7 +93,7 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
                                     Problem List
                                 </p>
                             </Link>
-                            <div className='flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer'>
+                            <div className='flex items-center justify-center rounded bg-dark-fill-3 hover:bg-dark-fill-2 h-8 w-8 cursor-pointer' onClick={() => handleProblemChange(true)}>
                                 <FaChevronRight />
                             </div>
                         </div>

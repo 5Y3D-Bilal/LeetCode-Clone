@@ -3,7 +3,7 @@ import { FaStar } from "react-icons/fa";
 import { AiFillDislike, AiFillLike, AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoMdCheckmarkCircleOutline } from "react-icons/io";
 import { DBProblem, Problem } from '@/utils/types/problem';
-import { doc, getDoc, runTransaction } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, doc, getDoc, runTransaction, updateDoc } from 'firebase/firestore';
 import { auth, firestore } from '@/Firebase/firebase';
 import RactangleSkeleton from '@/components/Skeletons/RactangleSkeleton';
 import CircleSkeleton from '@/components/Skeletons/CircleSkeleton';
@@ -12,9 +12,10 @@ import { toast } from 'react-toastify';
 
 type ProblemDescriptionProps = {
     problem: Problem
+    _solved: boolean
 };
 
-const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
+const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem, _solved }) => {
     const { currentProblem, loading, problemDifficultyClass, setCurrentProblem } = useGetCurrentProblems(problem.id);
     const { liked, disliked, solved, starred, setData } = useGetUserDataOnProblem(problem.id)
     const [user] = useAuthState(auth)
@@ -125,7 +126,29 @@ const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
         })
         setUpdatingLikes(false)
     }
-
+    // !
+    const handleStar = async () => {
+        if (!user) {
+            toast.error("You must be logged in to perfrom this action.")
+            return
+        }
+        if (updatingLikes) return
+        setUpdatingLikes(true)
+        if (!starred) {
+            const userRef = doc(firestore, "users", user.uid)
+            await updateDoc(userRef, {
+                starredProblems: arrayUnion(problem.id)
+            })
+            setData((prev) => ({ ...prev, starred: true }))
+        } else {
+            const userRef = doc(firestore, "users", user.uid)
+            await updateDoc(userRef, {
+                starretProblems: arrayRemove(problem.id)
+            })
+            setData((prev) => ({ ...prev, starred: false }))
+        }
+        setUpdatingLikes(false)
+    }
     return <div className='bg-dark-layer-1'>
         {/* TAB */}
         <div className='flex h-11 w-full items-center pt-2 bg-dark-layer-2 text-white overflow-x-hidden'>
@@ -148,9 +171,11 @@ const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
                             >
                                 {currentProblem.difficulty}
                             </div>
-                            <div className='rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s'>
-                                <IoMdCheckmarkCircleOutline />
-                            </div>
+                            {(solved || _solved ) && (
+                                <div className='rounded p-[3px] ml-4 text-lg transition-colors duration-200 text-green-s text-dark-green-s'>
+                                    <IoMdCheckmarkCircleOutline />
+                                </div>
+                            )}
                             <div
                                 className='flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-dark-gray-6'
                                 onClick={handleLike}
@@ -162,11 +187,18 @@ const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
                                 <span className='text-xs'>{currentProblem.likes}</span>
                             </div>
                             <div className='flex items-center cursor-pointer hover:bg-dark-fill-3 space-x-1 rounded p-[3px]  ml-4 text-lg transition-colors duration-200 text-green-s text-dark-gray-6' onClick={handleDislike}>
-                                <AiFillDislike />
+
+                                {disliked && !updatingLikes && <AiFillDislike className='text-dark-blue-s' />}
+                                {!disliked && !updatingLikes && <AiFillDislike />}
+                                {updatingLikes && <AiOutlineLoading3Quarters className='animate-spin' />}
                                 <span className='text-xs'>{currentProblem.dislikes}</span>
                             </div>
-                            <div className='cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 '>
-                                <FaStar />
+                            <div className='cursor-pointer hover:bg-dark-fill-3  rounded p-[3px]  ml-4 text-xl transition-colors duration-200 text-green-s text-dark-gray-6 ' onClick={handleStar}>
+                                {starred && !updatingLikes && (
+                                    <FaStar className='text-dark-yellow' />
+                                )}
+                                {!starred && !updatingLikes && (<FaStar className='' />)}
+                                {updatingLikes && <AiOutlineLoading3Quarters className='animate-spin' />}
                             </div>
                         </div>
                     )}
