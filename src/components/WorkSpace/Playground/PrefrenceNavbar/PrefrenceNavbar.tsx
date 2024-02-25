@@ -1,11 +1,41 @@
-import React from 'react';
-import { AiOutlineFullscreen, AiOutlineSetting } from 'react-icons/ai';
+import React, { useEffect, useState } from 'react';
+import { AiOutlineFullscreen, AiOutlineFullscreenExit, AiOutlineSetting } from 'react-icons/ai';
+import { ISettings } from '../Playground';
+import SettingsModal from '@/components/Modles/SettingModal';
 
 type PrefrenceNavbarProps = {
-
+    setting: ISettings
+    setSetting: React.Dispatch<React.SetStateAction<ISettings>>
 };
 
-const PrefrenceNavbar: React.FC<PrefrenceNavbarProps> = () => {
+
+const PrefrenceNavbar: React.FC<PrefrenceNavbarProps> = ({ setSetting, setting }) => {
+    const [isFullScreen, setIsFullScreen] = useState(false)
+    const handleFullScreen = () => {
+        if (isFullScreen) {
+            document.exitFullscreen()
+        } else {
+            document.documentElement.requestFullscreen()
+        }
+        setIsFullScreen(!isFullScreen)
+    }
+
+    useEffect(() => {
+        function exitHandler(e: any) {
+            if (!document.fullscreenElement) {
+                setIsFullScreen(false)
+                return
+            }
+            setIsFullScreen(true)
+        }
+        if (document.addEventListener) {
+            document.addEventListener("fullscreenchange", exitHandler)
+            document.addEventListener("webkitfullscreenchange", exitHandler)
+            document.addEventListener("mozfullscreenchange", exitHandler)
+            document.addEventListener("MSFullscreenChange", exitHandler)
+        }
+    })
+
 
     return (
         <>
@@ -19,20 +49,23 @@ const PrefrenceNavbar: React.FC<PrefrenceNavbarProps> = () => {
                 </div>
 
                 <div className='flex items-center m-2'>
-                    <button className='preferenceBtn group'>
+                    <button className='preferenceBtn group' onClick={() => setSetting({ ...setting, settingsModalIsOpen: true })}>
                         <div className='h-4 w-4 text-dark-gray-6 font-bold text-lg'>
                             <AiOutlineSetting />
                         </div>
                         <div className='preferenceBtn-tooltip'>Settings</div>
                     </button>
 
-                    <button className='preferenceBtn group'>
+                    <button className='preferenceBtn group' onClick={handleFullScreen}>
                         <div className='h-4 w-4 text-dark-gray-6 font-bold text-lg'>
-                            <AiOutlineFullscreen />
+                            {!isFullScreen ? <AiOutlineFullscreen /> : <AiOutlineFullscreenExit />}
                         </div>
                         <div className='preferenceBtn-tooltip'>Full Screen</div>
                     </button>
                 </div>
+                {setting.settingsModalIsOpen && (
+                    <SettingsModal setting={setting} setSetting={setSetting} />
+                )}
             </div>
         </>
     )

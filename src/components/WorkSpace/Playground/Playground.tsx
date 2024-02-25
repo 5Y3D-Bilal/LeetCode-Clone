@@ -12,6 +12,7 @@ import { toast } from 'react-toastify';
 import { problems } from '@/utils/problems';
 import { useRouter } from 'next/router';
 import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 type PlaygroundProps = {
     problem: Problem
@@ -19,12 +20,33 @@ type PlaygroundProps = {
     setSolved: React.Dispatch<React.SetStateAction<boolean>>
 };
 
+
+export interface ISettings {
+    fontsize: string
+    settingsModalIsOpen: boolean
+    dropdownIsOpen: boolean
+}
+
 const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved }) => {
+
+
 
     const [activeTestCaseId, setActiveTestCaseId] = useState<number>(0)
     let [userCode, setUserCode] = useState<string>(problem.starterCode)
     const [user] = useAuthState(auth)
     const { query: { pid } } = useRouter()
+
+
+    const [fontSize, setFontSize] = useLocalStorage("Lcc-FontSize", "16px")
+    const [setting, setSetting] = useState<ISettings>({
+        fontsize: fontSize,
+        settingsModalIsOpen: false,
+        dropdownIsOpen: false
+    })
+
+
+
+
     const handleSubmit = async () => {
         if (!user) {
             toast.error('To perform this action you have to login.')
@@ -77,7 +99,7 @@ const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved 
     }
 
     return <div className='flex flex-col bg-dark-layer-1 relative overflow-x-hidden'>
-        <PrefrenceNavbar />
+        <PrefrenceNavbar setting={setting} setSetting={setSetting} />
 
         <Split
             className=" h-[calc(100vh-94px)]"
@@ -92,7 +114,7 @@ const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved 
                         value={userCode}
                         theme={vscodeDark}
                         extensions={[javascript()]}
-                        style={{ fontSize: 16 }}
+                        style={{ fontSize: setting.fontsize }}
                     />
                 </div>
             </div>
